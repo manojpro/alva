@@ -3,7 +3,7 @@ import * as PathUtils from 'path';
 import { PatternParser } from './parser/pattern-parser';
 import { Property } from './property/property';
 import { Store } from '../../store/store';
-import { TypeScriptParser } from './parser/typescript-parser';
+import { TypeScriptParser } from './parser/typescript-parser/typescript-parser';
 
 /**
  * A pattern represents a reusable, styled component (e.g. a React component) of the styleguide.

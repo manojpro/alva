@@ -1,17 +1,19 @@
-import { BooleanProperty } from '../property/boolean-property';
-// TODO: import { PatternProperty } from '../property/pattern-property';
-import { EnumProperty, Option } from '../property/enum-property';
-import * as FileUtils from 'fs';
-import { NumberArrayProperty } from '../property/number-array-property';
-import { NumberProperty } from '../property/number-property';
-import { ObjectProperty } from '../property/object-property';
-import * as PathUtils from 'path';
-import { Pattern } from '../pattern';
-import { PatternParser } from './pattern-parser';
-import { Property } from '../property/property';
-import { StringArrayProperty } from '../property/string-array-property';
-import { StringProperty } from '../property/string-property';
 import * as ts from 'typescript';
+
+import { BooleanProperty } from '../../property/boolean_property';
+// TODO: import { PatternProperty } from '../property/pattern_property';
+import { EnumProperty, Option } from '../../property/enum_property';
+import * as FileUtils from 'fs';
+import { NumberArrayProperty } from '../../property/number_array_property';
+import { NumberProperty } from '../../property/number_property';
+import { ObjectProperty } from '../../property/object_property';
+import * as PathUtils from 'path';
+import { Pattern } from '../../pattern';
+import { PatternParser } from '../pattern_parser';
+import { Property } from '../../property/property';
+import { StringArrayProperty } from '../../property/string_array_property';
+import { StringProperty } from '../../property/string_property';
+import { getExportName, isExport } from './ts-utils';
 
 /**
  * Pattern parser implementation for TypeScript patterns.
@@ -50,19 +52,30 @@ export class TypeScriptParser extends PatternParser {
 	protected propsDeclaration?: ts.InterfaceDeclaration;
 	protected sourceFile?: ts.SourceFile;
 	protected typeName?: string;
+	protected exports: string[] = [];
 
 	protected analyzeDeclarations(): void {
+		const sourceFile = this.sourceFile as ts.SourceFile;
 		this.enums = {};
 		this.propsDeclaration = undefined;
 		this.typeName = undefined;
 
 		// Phase one: Find type name
-		(this.sourceFile as ts.SourceFile).forEachChild(node => {
+		sourceFile.forEachChild(node => {
 			if (ts.isExportAssignment(node)) {
 				const assignment: ts.ExportAssignment = node;
 				this.typeName = assignment.expression.getText();
 			}
 		});
+
+		// Phase two: gather exports
+		sourceFile.forEachChild(node => {
+			if (isExport(node)) {
+				this.exports.push(getExportName(node) || `unnamed export: ${node.getText()}`);
+			}
+		});
+
+		console.log(`Exports for ${this.sourceFile && this.sourceFile.fileName}: %o`, this.exports);
 
 		// Phase two: find props interface, enums, and pattern props imports
 		(this.sourceFile as ts.SourceFile).forEachChild(node => {
