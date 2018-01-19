@@ -56,6 +56,7 @@ export class TypeScriptParser extends PatternParser {
 
 	protected analyzeDeclarations(): void {
 		const sourceFile = this.sourceFile as ts.SourceFile;
+
 		this.enums = {};
 		this.propsDeclaration = undefined;
 		this.typeName = undefined;
