@@ -1,18 +1,18 @@
 import * as ts from 'typescript';
 
-import { BooleanProperty } from '../../property/boolean_property';
+import { BooleanProperty } from '../../property/boolean-property';
 // TODO: import { PatternProperty } from '../property/pattern_property';
-import { EnumProperty, Option } from '../../property/enum_property';
+import { EnumProperty, Option } from '../../property/enum-property';
 import * as FileUtils from 'fs';
-import { NumberArrayProperty } from '../../property/number_array_property';
-import { NumberProperty } from '../../property/number_property';
-import { ObjectProperty } from '../../property/object_property';
+import { NumberArrayProperty } from '../../property/number-array-property';
+import { NumberProperty } from '../../property/number-property';
+import { ObjectProperty } from '../../property/object-property';
 import * as PathUtils from 'path';
 import { Pattern } from '../../pattern';
-import { PatternParser } from '../pattern_parser';
+import { PatternParser } from '../pattern-parser';
 import { Property } from '../../property/property';
-import { StringArrayProperty } from '../../property/string_array_property';
-import { StringProperty } from '../../property/string_property';
+import { StringArrayProperty } from '../../property/string-array-property';
+import { StringProperty } from '../../property/string-property';
 import { getExportName, isExport } from './ts-utils';
 
 /**

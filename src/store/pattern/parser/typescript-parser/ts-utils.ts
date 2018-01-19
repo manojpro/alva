@@ -26,9 +26,7 @@ export function analyzeFile(fileName: string): void {
 		let exportType: TypeInheritanceTree | undefined;
 
 		if (ts.isVariableStatement(node)) {
-			const variableStatement: ts.VariableStatement = node;
-
-			variableStatement.declarationList.declarations.some(declaration => {
+			node.declarationList.declarations.some(declaration => {
 				if (!declaration.type) {
 					return false;
 				}
@@ -42,10 +40,8 @@ export function analyzeFile(fileName: string): void {
 		}
 
 		if (ts.isClassDeclaration(node)) {
-			const classDeclaration: ts.ClassDeclaration = node;
-
-			if (classDeclaration.name) {
-				exportName = classDeclaration.name.text;
+			if (node.name) {
+				exportName = node.name.text;
 			}
 
 			const type = typechecker.getTypeAtLocation(node);
@@ -53,10 +49,9 @@ export function analyzeFile(fileName: string): void {
 		}
 
 		if (ts.isExportAssignment(node)) {
-			const exportAssignment = node as ts.ExportAssignment;
 			exportName = 'default';
 
-			const expression = exportAssignment.expression;
+			const expression = node.expression;
 			const declaration = findDeclaration(expression);
 
 			if (declaration) {
@@ -81,8 +76,7 @@ export function findDeclaration(expression: ts.Expression): ts.Declaration | und
 
 	for (const statement of sourceFile.statements) {
 		if (ts.isVariableStatement(statement)) {
-			const variableStatement = statement as ts.VariableStatement;
-			for (const variableDeclaration of variableStatement.declarationList.declarations) {
+			for (const variableDeclaration of statement.declarationList.declarations) {
 				if (variableDeclaration.name.getText() === expression.getText()) {
 					return variableDeclaration;
 				}
@@ -139,12 +133,14 @@ export function findImport(
 ): ts.ImportDeclaration | undefined {
 	for (const statement of sourceFile.statements) {
 		if (ts.isImportDeclaration(statement)) {
-			const importDeclaration = statement as ts.ImportDeclaration;
-			const moduleSpecifierStringLiteral = importDeclaration.moduleSpecifier as ts.StringLiteral;
-			const moduleSpecifierText = moduleSpecifierStringLiteral.text;
+			if (!ts.isStringLiteral(statement.moduleSpecifier)) {
+				continue;
+			}
+
+			const moduleSpecifierText = statement.moduleSpecifier.text;
 
 			if (moduleSpecifierText === moduleSpecifier) {
-				return importDeclaration;
+				return statement;
 			}
 		}
 	}
