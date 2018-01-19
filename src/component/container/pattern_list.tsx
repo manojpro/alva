@@ -12,7 +12,7 @@ import PatternList, {
 import * as React from 'react';
 import Space, { Size } from '../../lsg/patterns/space';
 import { Store } from '../../store/store';
-import { analyzeFile } from '../../store/pattern/parser/typescript-parser/ts-utils';
+import { getExports } from '../../store/pattern/parser/typescript-parser/ts-utils';
 
 export interface PatternListContainerProps {
 	store: Store;
@@ -136,7 +136,10 @@ export class PatternListContainer extends React.Component<PatternListContainerPr
 			this.props.store.setSelectedElement(newPageElement);
 		}
 
-		analyzeFile(pattern.getAbsolutePath());
+		console.log(
+			`exports for ${pattern.getAbsolutePath()}: `,
+			getExports(pattern.getAbsolutePath())
+		);
 	}
 
 	@action

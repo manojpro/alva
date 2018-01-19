@@ -1,74 +1,96 @@
-import * as FileUtils from 'fs';
 import * as ts from 'typescript';
 
-export function analyzeFile(fileName: string): void {
+const WellKnownReactComponentTypes = ['Component', 'StatelessComponent', 'ComponentClass'];
+
+export function getExports(fileName: string): ExportsInfo {
+	const exports: ExportsInfo = {
+		namedExports: [],
+		defaultExport: undefined
+	};
+
 	fileName += '/index.d.ts';
-	fileName =
-		'/Users/waljul/Workspace/myaudi/packages/myaudi-components/lib/patterns/button/index.d.ts';
 
-	const tsConfigFile = '/Users/waljul/Workspace/myaudi/packages/myaudi-components/tsconfig.json';
-	const compilerOptions = JSON.parse(FileUtils.readFileSync(tsConfigFile).toString())
-		.compilerOptions;
-
-	const program = ts.createProgram([fileName], compilerOptions);
-	const typechecker = program.getTypeChecker();
+	const program = ts.createProgram([fileName], {});
 	const sourceFile = program.getSourceFile(fileName);
 
-	const reactImport = findImport(sourceFile, 'react');
+	const exportStatements = getExportStatements(sourceFile);
 
-	if (reactImport && reactImport.importClause) {
-		console.log(reactImport.importClause.getText());
+	exportStatements.forEach(statement => {
+		const exportInfo = getExportInfo(program, statement, type => isReactType(program, type));
+
+		if (!exportInfo) {
+			return;
+		}
+
+		if (!exportInfo.exportType.resolutionAborted) {
+			return;
+		}
+
+		if (isNamedExport(exportInfo)) {
+			exports.namedExports.push(exportInfo);
+			return;
+		}
+
+		exports.defaultExport = exportInfo;
+	});
+
+	return exports;
+}
+
+export function getExportInfo(
+	program: ts.Program,
+	statement: ts.Statement,
+	resolveBaseTypesUntil?: (type: ts.Type) => boolean
+): Export | NamedExport | undefined {
+	const typechecker = program.getTypeChecker();
+
+	if (ts.isVariableStatement(statement)) {
+		for (const declaration of statement.declarationList.declarations) {
+			if (!declaration.type) {
+				continue;
+			}
+
+			const exportName = declaration.name.getText();
+			const type = typechecker.getTypeAtLocation(declaration.type);
+			const exportType = getTypeInheritanceTree(program, type, resolveBaseTypesUntil);
+
+			return {
+				exportName,
+				exportType
+			};
+		}
 	}
 
-	const exports = getExports(sourceFile);
-	exports.forEach(node => {
-		let exportName = 'unknown';
-		let exportType: TypeInheritanceTree | undefined;
-
-		if (ts.isVariableStatement(node)) {
-			node.declarationList.declarations.some(declaration => {
-				if (!declaration.type) {
-					return false;
-				}
-
-				exportName = declaration.name.getText();
-				const type = typechecker.getTypeAtLocation(declaration.type);
-				exportType = getTypeInheritanceTree(typechecker, type);
-
-				return true;
-			});
+	if (ts.isClassDeclaration(statement)) {
+		if (!statement.name) {
+			return;
 		}
 
-		if (ts.isClassDeclaration(node)) {
-			if (node.name) {
-				exportName = node.name.text;
-			}
+		const exportName = statement.name.text;
+		const type = typechecker.getTypeAtLocation(statement);
+		const exportType = getTypeInheritanceTree(program, type, resolveBaseTypesUntil);
 
-			const type = typechecker.getTypeAtLocation(node);
-			exportType = getTypeInheritanceTree(typechecker, type);
+		return {
+			exportName,
+			exportType
+		};
+	}
+
+	if (ts.isExportAssignment(statement)) {
+		const expression = statement.expression;
+		const declaration = findDeclaration(expression);
+
+		if (declaration) {
+			const type = typechecker.getTypeAtLocation(declaration);
+			const exportType = getTypeInheritanceTree(program, type, resolveBaseTypesUntil);
+
+			return {
+				exportType
+			};
 		}
+	}
 
-		if (ts.isExportAssignment(node)) {
-			exportName = 'default';
-
-			const expression = node.expression;
-			const declaration = findDeclaration(expression);
-
-			if (declaration) {
-				const type = typechecker.getTypeAtLocation(declaration);
-				exportType = getTypeInheritanceTree(typechecker, type);
-			}
-		}
-
-		const statementText = node.getText();
-
-		console.log(statementText);
-		console.log('-- name: ', exportName);
-		console.log('-- type: ', exportType);
-		console.log(`
-		====================================
-		`);
-	});
+	return;
 }
 
 export function findDeclaration(expression: ts.Expression): ts.Declaration | undefined {
@@ -88,14 +110,17 @@ export function findDeclaration(expression: ts.Expression): ts.Declaration | und
 }
 
 export function getTypeInheritanceTree(
-	typechecker: ts.TypeChecker,
+	program: ts.Program,
 	type: ts.Type,
-	until?: ts.Type
+	until?: (type: ts.Type) => boolean
 ): TypeInheritanceTree {
+	const typechecker = program.getTypeChecker();
+
 	const retVal: TypeInheritanceTree = {
 		baseTypes: [],
 		type,
-		typeName: undefined
+		typeName: undefined,
+		resolutionAborted: false
 	};
 
 	const symbol = type.symbol;
@@ -113,6 +138,12 @@ export function getTypeInheritanceTree(
 	}
 
 	const realType = typechecker.getTypeAtLocation(typeDeclaration);
+
+	if (until && until(realType)) {
+		retVal.resolutionAborted = true;
+		return retVal;
+	}
+
 	const baseTypes = realType.getBaseTypes();
 
 	if (!baseTypes) {
@@ -120,8 +151,9 @@ export function getTypeInheritanceTree(
 	}
 
 	const baseTypeTrees = baseTypes.map(baseType =>
-		getTypeInheritanceTree(typechecker, baseType, until)
+		getTypeInheritanceTree(program, baseType, until)
 	);
+
 	retVal.baseTypes = baseTypeTrees;
 
 	return retVal;
@@ -148,7 +180,7 @@ export function findImport(
 	return undefined;
 }
 
-export function getExports(sourceFile: ts.SourceFile): ts.Statement[] {
+export function getExportStatements(sourceFile: ts.SourceFile): ts.Statement[] {
 	const exports: ts.Statement[] = [];
 
 	sourceFile.statements.forEach(child => {
@@ -158,14 +190,6 @@ export function getExports(sourceFile: ts.SourceFile): ts.Statement[] {
 	});
 
 	return exports;
-}
-
-export function isDescendant(
-	typechecker: ts.TypeChecker,
-	type: ts.Type,
-	ancestor: ts.Type
-): boolean {
-	return true;
 }
 
 export function isExport(node: ts.Node): boolean {
@@ -203,6 +227,34 @@ export function getExportName(node: ts.Node, isRoot: boolean = true): string | u
 	return undefined;
 }
 
+export function isNamedExport(exportInfo: Export): exportInfo is NamedExport {
+	return (exportInfo as NamedExport).exportName ? true : false;
+}
+
+export function isReactType(program: ts.Program, type: ts.Type): boolean {
+	if (!(type.symbol && type.symbol.declarations)) {
+		return false;
+	}
+
+	const symbol = type.symbol;
+	const declarations = type.symbol.declarations;
+
+	const isWellKnownType = WellKnownReactComponentTypes.some(
+		wellKnownReactComponentType => symbol.name === wellKnownReactComponentType
+	);
+
+	if (!isWellKnownType) {
+		return false;
+	}
+
+	for (const declaration of declarations) {
+		const sourceFile = declaration.getSourceFile();
+		return sourceFile.fileName.includes('react/index.d.ts');
+	}
+
+	return false;
+}
+
 export function getAst(node: ts.Node): TypeScriptAst {
 	return {
 		node,
@@ -223,4 +275,18 @@ export interface TypeInheritanceTree {
 	type: ts.Type;
 	typeName?: string;
 	baseTypes: TypeInheritanceTree[];
+	resolutionAborted: boolean;
+}
+
+export interface Export {
+	exportType: TypeInheritanceTree;
+}
+
+export interface NamedExport extends Export {
+	exportName: string;
+}
+
+export interface ExportsInfo {
+	namedExports: NamedExport[];
+	defaultExport?: Export;
 }
