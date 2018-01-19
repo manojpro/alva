@@ -150,9 +150,12 @@ export function getTypeInheritanceTree(
 		return retVal;
 	}
 
-	const baseTypeTrees = baseTypes.map(baseType =>
-		getTypeInheritanceTree(program, baseType, until)
-	);
+	const baseTypeTrees = baseTypes.map(baseType => {
+		const baseTypeTree = getTypeInheritanceTree(program, baseType, until);
+		retVal.resolutionAborted = baseTypeTree.resolutionAborted;
+
+		return baseTypeTree;
+	});
 
 	retVal.baseTypes = baseTypeTrees;
 
