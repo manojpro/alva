@@ -1,6 +1,6 @@
 import { Pattern } from '../../pattern/pattern';
 import { StyleguideAnalyzer } from '../styleguide-analyzer';
-import { getExports, ExportsInfo } from '../../pattern/parser/typescript-parser/ts-utils';
+import { ExportsInfo, getExports } from '../../pattern/parser/typescript-parser/ts-utils';
 import * as ts from 'typescript';
 
 import * as FileUtils from 'fs';
