@@ -341,8 +341,8 @@ export class Store {
 		this.preferences.setLastStyleguidePath(styleguidePath);
 		this.savePreferences();
 
-		const styleguide = new Styleguide();
-		styleguide.load(this.getPatternsPath());
+		const styleguide = new Styleguide('yoloshit', this.getPatternsPath());
+		styleguide.load();
 	}
 
 	/**

@@ -1,5 +1,6 @@
-import { Pattern } from '../pattern/pattern';
+import { Pattern } from './pattern';
+import { Styleguide } from './styleguide';
 
-export abstract class StyleguideAnalyzer {
-	public abstract analyze(path: string): Pattern[];
+export abstract class StyleguideAnalyzer<T extends Pattern = Pattern> {
+	public abstract analyze(styleguide: Styleguide): T[];
 }
