@@ -10,6 +10,7 @@ import * as PathUtils from 'path';
 import { Pattern } from './pattern/pattern';
 import { Preferences } from './preferences';
 import { Project } from './project//project';
+import { Styleguide } from './styleguide/styleguide';
 
 /**
  * The central entry-point for all application state, managed by MobX.
@@ -339,6 +340,9 @@ export class Store {
 
 		this.preferences.setLastStyleguidePath(styleguidePath);
 		this.savePreferences();
+
+		const styleguide = new Styleguide();
+		styleguide.load(this.getPatternsPath());
 	}
 
 	/**

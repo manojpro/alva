@@ -2,14 +2,11 @@ import * as ts from 'typescript';
 
 const WellKnownReactComponentTypes = ['Component', 'StatelessComponent', 'ComponentClass'];
 
-export function getExports(fileName: string): ExportsInfo {
+export function getExports(sourceFile: ts.SourceFile, program: ts.Program): ExportsInfo {
 	const exports: ExportsInfo = {
 		namedExports: [],
 		defaultExport: undefined
 	};
-
-	const program = ts.createProgram([fileName], {});
-	const sourceFile = program.getSourceFile(fileName);
 
 	const exportStatements = getExportStatements(sourceFile);
 
