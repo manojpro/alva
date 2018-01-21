@@ -138,7 +138,7 @@ export class PatternListContainer extends React.Component<PatternListContainerPr
 
 		console.log(
 			`exports for ${pattern.getAbsolutePath()}: `,
-			getExports(pattern.getAbsolutePath())
+			getExports(pattern.getAbsolutePath() + '/index.d.ts')
 		);
 	}
 

@@ -13,7 +13,6 @@ import { PatternParser } from '../pattern-parser';
 import { Property } from '../../property/property';
 import { StringArrayProperty } from '../../property/string-array-property';
 import { StringProperty } from '../../property/string-property';
-import { getExportName, isExport } from './ts-utils';
 
 /**
  * Pattern parser implementation for TypeScript patterns.
@@ -52,7 +51,6 @@ export class TypeScriptParser extends PatternParser {
 	protected propsDeclaration?: ts.InterfaceDeclaration;
 	protected sourceFile?: ts.SourceFile;
 	protected typeName?: string;
-	protected exports: string[] = [];
 
 	protected analyzeDeclarations(): void {
 		const sourceFile = this.sourceFile as ts.SourceFile;
@@ -68,15 +66,6 @@ export class TypeScriptParser extends PatternParser {
 				this.typeName = assignment.expression.getText();
 			}
 		});
-
-		// Phase two: gather exports
-		sourceFile.forEachChild(node => {
-			if (isExport(node)) {
-				this.exports.push(getExportName(node) || `unnamed export: ${node.getText()}`);
-			}
-		});
-
-		console.log(`Exports for ${this.sourceFile && this.sourceFile.fileName}: %o`, this.exports);
 
 		// Phase two: find props interface, enums, and pattern props imports
 		(this.sourceFile as ts.SourceFile).forEachChild(node => {

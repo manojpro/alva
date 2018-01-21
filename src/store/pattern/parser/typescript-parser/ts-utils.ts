@@ -8,8 +8,6 @@ export function getExports(fileName: string): ExportsInfo {
 		defaultExport: undefined
 	};
 
-	fileName += '/index.d.ts';
-
 	const program = ts.createProgram([fileName], {});
 	const sourceFile = program.getSourceFile(fileName);
 
@@ -210,24 +208,6 @@ export function isExport(node: ts.Node): boolean {
 	}
 
 	return false;
-}
-
-export function getExportName(node: ts.Node, isRoot: boolean = true): string | undefined {
-	let exportName: string | undefined;
-
-	if (node.kind === ts.SyntaxKind.Identifier) {
-		return node.getText();
-	}
-
-	for (const child of node.getChildren()) {
-		exportName = getExportName(child, false);
-
-		if (exportName) {
-			return exportName;
-		}
-	}
-
-	return undefined;
 }
 
 export function isNamedExport(exportInfo: Export): exportInfo is NamedExport {
