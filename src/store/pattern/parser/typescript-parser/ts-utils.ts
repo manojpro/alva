@@ -2,11 +2,8 @@ import * as ts from 'typescript';
 
 const WellKnownReactComponentTypes = ['Component', 'StatelessComponent', 'ComponentClass'];
 
-export function getExports(sourceFile: ts.SourceFile, program: ts.Program): ExportsInfo {
-	const exports: ExportsInfo = {
-		namedExports: [],
-		defaultExport: undefined
-	};
+export function getExports(sourceFile: ts.SourceFile, program: ts.Program): Export[] {
+	const exports: Export[] = [];
 
 	const exportStatements = getExportStatements(sourceFile);
 
@@ -21,12 +18,7 @@ export function getExports(sourceFile: ts.SourceFile, program: ts.Program): Expo
 			return;
 		}
 
-		if (isNamedExport(exportInfo)) {
-			exports.namedExports.push(exportInfo);
-			return;
-		}
-
-		exports.defaultExport = exportInfo;
+		exports.push(exportInfo);
 	});
 
 	return exports;
@@ -36,7 +28,7 @@ export function getExportInfo(
 	program: ts.Program,
 	statement: ts.Statement,
 	resolveBaseTypesUntil?: (type: ts.Type) => boolean
-): Export | NamedExport | undefined {
+): Export | undefined {
 	const typechecker = program.getTypeChecker();
 
 	if (ts.isVariableStatement(statement)) {
@@ -207,10 +199,6 @@ export function isExport(node: ts.Node): boolean {
 	return false;
 }
 
-export function isNamedExport(exportInfo: Export): exportInfo is NamedExport {
-	return (exportInfo as NamedExport).exportName ? true : false;
-}
-
 export function isReactType(program: ts.Program, type: ts.Type): boolean {
 	if (!(type.symbol && type.symbol.declarations)) {
 		return false;
@@ -260,13 +248,5 @@ export interface TypeInheritanceTree {
 
 export interface Export {
 	exportType: TypeInheritanceTree;
-}
-
-export interface NamedExport extends Export {
-	exportName: string;
-}
-
-export interface ExportsInfo {
-	namedExports: NamedExport[];
-	defaultExport?: Export;
+	exportName?: string;
 }

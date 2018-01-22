@@ -1,4 +1,4 @@
-import { ReactPattern, ReactPatternInit } from './react-pattern';
+import { PatternBaseInfo, ReactPattern } from './react-pattern';
 import { Styleguide } from '../styleguide';
 import { StyleguideAnalyzer } from '../styleguide-analyzer';
 import { getExports } from '../../pattern/parser/typescript-parser/ts-utils';
@@ -23,18 +23,10 @@ export class TypescriptReactAnalyzer extends StyleguideAnalyzer<ReactPattern> {
 			const sourceFile = this.program.getSourceFile(patternInfo.declarationFilePath);
 			const exports = getExports(sourceFile, this.program);
 
-			if (exports.defaultExport) {
+			exports.forEach(exportInfo => {
 				const pattern = new ReactPattern(styleguide, {
-					...patternInfo
-				});
-
-				patterns.push(pattern);
-			}
-
-			exports.namedExports.forEach(namedExport => {
-				const pattern = new ReactPattern(styleguide, {
-					...patternInfo,
-					exportName: namedExport.exportName
+					baseInfo: patternInfo,
+					export: exportInfo
 				});
 
 				patterns.push(pattern);
@@ -47,7 +39,7 @@ export class TypescriptReactAnalyzer extends StyleguideAnalyzer<ReactPattern> {
 	}
 }
 
-function walkDirectoriesAndCollectPatterns(directory: string): ReactPatternInit[] {
+function walkDirectoriesAndCollectPatterns(directory: string): PatternBaseInfo[] {
 	let patterns = detectPatternsInDirectory(directory);
 
 	FileUtils.readdirSync(directory).forEach(childName => {
@@ -61,8 +53,8 @@ function walkDirectoriesAndCollectPatterns(directory: string): ReactPatternInit[
 	return patterns;
 }
 
-function detectPatternsInDirectory(directory: string): ReactPatternInit[] {
-	const patterns: ReactPatternInit[] = [];
+function detectPatternsInDirectory(directory: string): PatternBaseInfo[] {
+	const patterns: PatternBaseInfo[] = [];
 
 	FileUtils.readdirSync(directory).forEach(childName => {
 		const childPath = PathUtils.join(directory, childName);
@@ -76,7 +68,7 @@ function detectPatternsInDirectory(directory: string): ReactPatternInit[] {
 		const jsFilePath = PathUtils.join(directory, `${name}.js`);
 
 		if (FileUtils.existsSync(jsFilePath)) {
-			const patternFileInfo: ReactPatternInit = {
+			const patternFileInfo: PatternBaseInfo = {
 				directory,
 				declarationFilePath,
 				jsFilePath
