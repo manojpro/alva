@@ -1,5 +1,4 @@
 import Input from '../../lsg/patterns/input/';
-import { PatternFolder } from '../../store/pattern/folder';
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { PageElement } from '../../store/page/page-element';
@@ -12,6 +11,7 @@ import PatternList, {
 import * as React from 'react';
 import Space, { Size } from '../../lsg/patterns/space';
 import { Store } from '../../store/store';
+import { Styleguide } from '../../store/styleguide/styleguide';
 
 export interface PatternListContainerProps {
 	store: Store;
@@ -51,7 +51,7 @@ export class PatternListContainer extends React.Component<PatternListContainerPr
 	}
 
 	public render(): JSX.Element {
-		this.items = this.createItemsFromFolder(this.props.store.getPatternRoot() as PatternFolder);
+		this.items = this.createItemsFromStyleguide(this.props.store.getStyleguide() as Styleguide);
 		if (this.props.store.getPatternSearchTerm() !== '') {
 			this.items = this.search(this.items, this.props.store.getPatternSearchTerm());
 		}
@@ -66,20 +66,14 @@ export class PatternListContainer extends React.Component<PatternListContainerPr
 		);
 	}
 
-	public createItemsFromFolder(folder: PatternFolder): PatternListContainerItemProps[] {
+	public createItemsFromStyleguide(styleguide: Styleguide): PatternListContainerItemProps[] {
 		const result: PatternListContainerItemProps[] = [];
-		if (folder) {
-			folder.getChildren().forEach((child: PatternFolder) => {
-				const childItem: PatternListContainerItemProps = { value: child.getName() };
-				childItem.children = this.createItemsFromFolder(child);
-				result.push(childItem);
-			});
-
-			folder.getPatterns().forEach((pattern: Pattern) => {
+		if (styleguide) {
+			styleguide.patterns.forEach((pattern: Pattern) => {
 				result.push({
-					value: pattern.getName(),
+					value: pattern.name,
 					draggable: true,
-					icon: pattern.getIconPath(),
+					icon: pattern.iconPath,
 					handleDragStart: (e: React.DragEvent<HTMLElement>) => {
 						this.handleDragStart(e, pattern);
 					},
@@ -138,13 +132,13 @@ export class PatternListContainer extends React.Component<PatternListContainerPr
 
 	@action
 	protected handleDragStart(e: React.DragEvent<HTMLElement>, pattern: Pattern): void {
-		const data = pattern.getRelativePath();
+		const data = pattern.globalId;
 		e.dataTransfer.dropEffect = 'copy';
 		e.dataTransfer.setDragImage(
 			e.currentTarget.querySelector('.pattern__icon') as Element,
 			12,
 			12
 		);
-		e.dataTransfer.setData('patternPath', data);
+		e.dataTransfer.setData('globalPatternId', data);
 	}
 }

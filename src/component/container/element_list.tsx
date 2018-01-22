@@ -93,7 +93,7 @@ export class ElementList extends React.Component<ElementListProps> {
 
 		return {
 			label: key,
-			value: pattern.getName(),
+			value: pattern.name,
 			onClick: updatePageElement,
 			onContextMenu: () => {
 				elementMenu(this.props.store, element);
@@ -102,10 +102,16 @@ export class ElementList extends React.Component<ElementListProps> {
 				this.props.store.setRearrangeElement(element);
 			},
 			handleDragDropForChild: (e: React.DragEvent<HTMLElement>) => {
-				const transferPatternPath = e.dataTransfer.getData('patternPath');
+				const styleguide = this.props.store.getStyleguide();
+
+				if (!styleguide) {
+					return;
+				}
+
+				const transferPatternPath = e.dataTransfer.getData('globalPatternId');
 				const parentElement = element.getParent();
 				const pageElement = transferPatternPath
-					? new PageElement(this.props.store.getPattern(transferPatternPath), true)
+					? new PageElement(styleguide.findPattern(transferPatternPath), true)
 					: this.props.store.getRearrangeElement();
 
 				if (!parentElement || !pageElement || pageElement.isAncestorOf(parentElement)) {
@@ -116,9 +122,15 @@ export class ElementList extends React.Component<ElementListProps> {
 				this.props.store.setSelectedElement(pageElement);
 			},
 			handleDragDrop: (e: React.DragEvent<HTMLElement>) => {
-				const transferPatternPath = e.dataTransfer.getData('patternPath');
+				const styleguide = this.props.store.getStyleguide();
+
+				if (!styleguide) {
+					return;
+				}
+
+				const transferPatternPath = e.dataTransfer.getData('globalPatternId');
 				const pageElement = transferPatternPath
-					? new PageElement(this.props.store.getPattern(transferPatternPath), true)
+					? new PageElement(styleguide.findPattern(transferPatternPath), true)
 					: this.props.store.getRearrangeElement();
 
 				if (!pageElement || pageElement.isAncestorOf(element)) {

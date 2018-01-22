@@ -1,9 +1,10 @@
 import * as PathUtils from 'path';
-import { Pattern } from '../pattern';
+import { Pattern } from '../../pattern/pattern';
+import { Property } from '../../pattern/property/property';
+import { getPropreties } from './property-analyzer';
 import { Styleguide } from '../styleguide';
-import { Export } from '../../pattern/parser/typescript-parser/ts-utils';
-
-const REACT_PATTERN_TYPE = 'react';
+import { Export } from './ts-utils';
+import { TypescriptReactAnalyzer } from '../typescript-react-analyzer';
 
 export interface PatternBaseInfo {
 	directory: string;
@@ -17,18 +18,26 @@ export interface PatternInit {
 }
 
 export class ReactPattern implements Pattern {
-	public readonly displayName: string;
+	public readonly iconPath?: string | undefined;
+	public readonly properties: Map<string, Property>;
+	public readonly valid: boolean;
+	public readonly name: string;
 	public readonly id: string;
-	public get styleguideId(): string {
-		return this.styleguide.id;
+	public readonly init: PatternInit;
+	public readonly analyzer: TypescriptReactAnalyzer | undefined;
+	public readonly styleguide: Styleguide;
+	public readonly baseIdentifier: string;
+	// TODO: let baseclass handle global id generation;
+	public get globalId(): string {
+		return `${this.styleguide.id}:${this.id}`;
 	}
-	public get analyzerId(): string {
-		return REACT_PATTERN_TYPE;
-	}
-	private readonly init: PatternInit;
-	private readonly styleguide: Styleguide;
 
-	public constructor(styleguide: Styleguide, init: PatternInit) {
+	public constructor(
+		styleguide: Styleguide,
+		analyzer: TypescriptReactAnalyzer,
+		init: PatternInit
+	) {
+		this.analyzer = analyzer;
 		this.styleguide = styleguide;
 		this.init = init;
 
@@ -38,16 +47,28 @@ export class ReactPattern implements Pattern {
 			this.init.baseInfo.directory
 		);
 
-		const baseIdentifier = PathUtils.join(relativeDirectoryPath, baseName);
+		this.baseIdentifier = PathUtils.join(relativeDirectoryPath, baseName);
 		const exportIdentifier = this.init.export.exportName ? `@${this.init.export.exportName}` : '';
 
-		const id = `${baseIdentifier}${exportIdentifier}`;
+		const id = `${this.baseIdentifier}${exportIdentifier}`;
 		this.id = id;
 
 		const directoryName = PathUtils.basename(this.init.baseInfo.directory);
-		const displayName = this.init.export.exportName
+		const name = this.init.export.exportName
 			? this.init.export.exportName
 			: baseName !== 'index' ? baseName : directoryName;
-		this.displayName = displayName;
+		this.name = name;
+
+		this.properties = getPropreties(this);
+	}
+
+	public getProperty(id: string): Property | undefined {
+		return this.properties.get(id);
+	}
+	public toString(): string {
+		throw new Error('Method not implemented.');
+	}
+	public reload(): void {
+		throw new Error('Method not implemented.');
 	}
 }

@@ -4,6 +4,7 @@ import { PageElement } from '../../store/page/page-element';
 import { Pattern } from '../../store/pattern/pattern';
 import { PropertyValue } from '../../store/page/property-value';
 import * as React from 'react';
+import { ReactPattern } from '../../store/styleguide/typescript-react-analyzer/react-pattern';
 import { TextPattern } from '../../store/pattern/text-pattern';
 
 class PatternWrapper extends React.Component<{}, PatternWrapperState> {
@@ -76,7 +77,7 @@ export class Preview extends React.Component<PreviewProps> {
 
 			// tslint:disable-next-line:no-any
 			const componentProps: any = {};
-			pattern.getProperties().forEach(property => {
+			pattern.properties.forEach(property => {
 				componentProps[property.getId()] = this.createComponent(
 					property.convertToRender(pageElement.getPropertyValue(property.getId())),
 					property.getId()
@@ -88,7 +89,8 @@ export class Preview extends React.Component<PreviewProps> {
 				.map((child, index) => this.createComponent(child, String(index)));
 
 			// Then, load the pattern factory
-			const patternPath: string = pattern.getAbsolutePath();
+			const reactPattern = pattern as ReactPattern;
+			const patternPath: string = reactPattern.init.baseInfo.jsFilePath;
 			let patternFactory: React.StatelessComponent = this.patternFactories[patternPath];
 			if (patternFactory == null) {
 				// tslint:disable-line

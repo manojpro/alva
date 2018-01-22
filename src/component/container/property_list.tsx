@@ -33,7 +33,7 @@ export class PropertyList extends React.Component<PropertyListProps> {
 
 		const pattern = selectedElement.getPattern();
 
-		const properties: Property[] | undefined = pattern && pattern.getProperties();
+		const properties: Property[] | undefined = pattern && Array.from(pattern.properties);
 
 		if (!properties) {
 			return <div>This element has no properties</div>;

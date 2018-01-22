@@ -1,14 +1,17 @@
 import { PatternBaseInfo, ReactPattern } from './react-pattern';
 import { Styleguide } from '../styleguide';
 import { StyleguideAnalyzer } from '../styleguide-analyzer';
-import { getExports } from '../../pattern/parser/typescript-parser/ts-utils';
+import { getExports } from './ts-utils';
 import * as ts from 'typescript';
 
 import * as FileUtils from 'fs';
 import * as PathUtils from 'path';
 
 export class TypescriptReactAnalyzer extends StyleguideAnalyzer<ReactPattern> {
-	private program: ts.Program;
+	private _program: ts.Program;
+	public get program(): ts.Program {
+		return this._program;
+	}
 
 	public analyze(styleguide: Styleguide): ReactPattern[] {
 		const patterns: ReactPattern[] = [];
@@ -17,14 +20,14 @@ export class TypescriptReactAnalyzer extends StyleguideAnalyzer<ReactPattern> {
 
 		const declarationFiles = patternInfos.map(patternInfo => patternInfo.declarationFilePath);
 
-		this.program = ts.createProgram(declarationFiles, {}, undefined, this.program);
+		this._program = ts.createProgram(declarationFiles, {}, undefined, this.program);
 
 		patternInfos.forEach(patternInfo => {
 			const sourceFile = this.program.getSourceFile(patternInfo.declarationFilePath);
 			const exports = getExports(sourceFile, this.program);
 
 			exports.forEach(exportInfo => {
-				const pattern = new ReactPattern(styleguide, {
+				const pattern = new ReactPattern(styleguide, this, {
 					baseInfo: patternInfo,
 					export: exportInfo
 				});

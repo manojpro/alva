@@ -1,4 +1,3 @@
-import { PatternFolder } from './pattern/folder';
 import { JsonArray, JsonObject, Persister } from './json';
 import * as MobX from 'mobx';
 import { IObservableArray } from 'mobx/lib/types/observablearray';
@@ -53,7 +52,7 @@ export class Store {
 	/**
 	 * The root folder of the patterns of the currently opened styleguide.
 	 */
-	@MobX.observable private patternRoot: PatternFolder;
+	@MobX.observable private styleguide: Styleguide;
 
 	/**
 	 * The internal data storage for preferences, i.e. personal settings
@@ -207,21 +206,11 @@ export class Store {
 	}
 
 	/**
-	 * Returns a parsed pattern information object for a given relative pattern path.
-	 * @param path The path to the pattern. May be a simple ID for top-level patterns,
-	 * or a slash-separated list of pattern folders and finally the pattern's ID.
-	 * @return The resolved pattern, or undefined, if no such path exists.
-	 */
-	public getPattern(path: string): Pattern | undefined {
-		return this.patternRoot.getPattern(path);
-	}
-
-	/**
 	 * Returns the root folder of the patterns of the currently opened styleguide.
 	 * @return The root folder object.
 	 */
-	public getPatternRoot(): PatternFolder | undefined {
-		return this.patternRoot;
+	public getStyleguide(): Styleguide | undefined {
+		return this.styleguide;
 	}
 
 	/**
@@ -326,8 +315,8 @@ export class Store {
 			}
 			this.styleGuidePath = styleguidePath;
 			this.currentPage = undefined;
-			this.patternRoot = new PatternFolder(this, '');
-			this.patternRoot.addTextPattern();
+			this.styleguide = new Styleguide('yoloshit', styleguidePath);
+			this.styleguide.load();
 
 			(this.projects as IObservableArray<Project>).clear();
 			const projectsPath = PathUtils.join(this.getPagesPath(), 'projects.yaml');
@@ -340,9 +329,6 @@ export class Store {
 
 		this.preferences.setLastStyleguidePath(styleguidePath);
 		this.savePreferences();
-
-		const styleguide = new Styleguide('yoloshit', this.getPatternsPath());
-		styleguide.load();
 	}
 
 	/**
@@ -456,7 +442,7 @@ export class Store {
 	 * @return All patterns that match.
 	 */
 	public searchPatterns(term: string): Pattern[] {
-		return this.patternRoot ? this.patternRoot.searchPatterns(term) : [];
+		return this.styleguide ? this.styleguide.searchPatterns(term) : [];
 	}
 
 	/**

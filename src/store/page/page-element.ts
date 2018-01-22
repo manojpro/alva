@@ -1,10 +1,11 @@
 import { JsonArray, JsonObject, JsonValue } from '../json';
 import * as MobX from 'mobx';
-import * as PathUtils from 'path';
 import { Pattern } from '../pattern/pattern';
 import { Property } from '../pattern/property/property';
 import { PropertyValue } from './property-value';
+import { ReactPattern } from '../styleguide/typescript-react-analyzer/react-pattern';
 import { Store } from '../store';
+import { Styleguide } from '../styleguide/styleguide';
 
 /**
  * A page element provides the properties data of a pattern.
@@ -50,10 +51,15 @@ export class PageElement {
 	 */
 	public constructor(pattern?: Pattern, setDefaults?: boolean, parent?: PageElement) {
 		this.pattern = pattern;
-		this.patternPath = pattern ? pattern.getRelativePath().replace(PathUtils.sep, '/') : '';
+		this.patternPath = '';
+
+		if (pattern) {
+			const reactPattern = pattern as ReactPattern;
+			this.patternPath = reactPattern.baseIdentifier;
+		}
 
 		if (setDefaults && this.pattern) {
-			this.pattern.getProperties().forEach(property => {
+			this.pattern.properties.forEach(property => {
 				this.setPropertyValue(property.getId(), property.getDefaultValue());
 				console.log(
 					`Property ${property.getId()}: Set default ${JSON.stringify(
@@ -76,13 +82,19 @@ export class PageElement {
 		store: Store,
 		parent?: PageElement
 	): PageElement | undefined {
-		const patternPath: string = json['pattern'] as string;
-		const pattern: Pattern | undefined = store.getPattern(patternPath);
+		const styleguide = store.getStyleguide();
+
+		if (!styleguide) {
+			return;
+		}
+
+		const patternId: string = json['pattern'] as string;
+		const pattern: Pattern | undefined = styleguide.findPattern(patternId);
 		const element = new PageElement(pattern, false, parent);
 
 		if (!pattern) {
-			console.warn(`Ignoring unknown pattern "${patternPath}"`);
-			element.patternPath = patternPath;
+			console.warn(`Ignoring unknown pattern "${patternId}"`);
+			element.patternPath = patternId;
 			return element;
 		}
 
@@ -147,10 +159,12 @@ export class PageElement {
 	 * @return The new child element.
 	 */
 	protected createChildElement(json: JsonValue, store: Store): PageElement | PropertyValue {
+		const styleguide = store.getStyleguide() as Styleguide;
+
 		if (json && (json as JsonObject)['_type'] === 'pattern') {
 			return PageElement.fromJsonObject(json as JsonObject, store, this);
 		} else {
-			const element: PageElement = new PageElement(store.getPattern('text'), false, this);
+			const element: PageElement = new PageElement(styleguide.findPattern('text'), false, this);
 			element.setPropertyValue('text', String(json));
 			return element;
 		}
