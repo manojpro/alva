@@ -13,6 +13,8 @@ export class TypescriptReactAnalyzer extends StyleguideAnalyzer<ReactPattern> {
 		return this._program;
 	}
 
+	public readonly id: string = 'react';
+
 	public analyze(styleguide: Styleguide): ReactPattern[] {
 		const patterns: ReactPattern[] = [];
 

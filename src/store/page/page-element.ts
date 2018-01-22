@@ -55,7 +55,7 @@ export class PageElement {
 
 		if (pattern) {
 			const reactPattern = pattern as ReactPattern;
-			this.patternPath = reactPattern.baseIdentifier;
+			this.patternPath = reactPattern.id.globalId;
 		}
 
 		if (setDefaults && this.pattern) {

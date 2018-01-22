@@ -30,7 +30,7 @@ export class Styleguide {
 	}
 
 	public findPattern(id: string): Pattern | undefined {
-		return this.patterns.find(pattern => pattern.id === id);
+		return this.patterns.find(pattern => pattern.id.globalId === id);
 	}
 
 	/**

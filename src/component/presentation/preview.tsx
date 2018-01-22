@@ -94,7 +94,8 @@ export class Preview extends React.Component<PreviewProps> {
 			let patternFactory: React.StatelessComponent = this.patternFactories[patternPath];
 			if (patternFactory == null) {
 				// tslint:disable-line
-				patternFactory = require(patternPath).default;
+				const exportName = reactPattern.init.export.exportName || 'default';
+				patternFactory = require(patternPath)[exportName];
 				this.patternFactories[patternPath] = patternFactory;
 			}
 			const reactComponent = patternFactory(componentProps);

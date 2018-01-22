@@ -1,3 +1,4 @@
+import { PatternIdentifier } from './pattern-identifier';
 import { Property } from './property/property';
 import { Styleguide } from '../styleguide/styleguide';
 import { StyleguideAnalyzer } from '../styleguide/styleguide-analyzer';
@@ -11,48 +12,52 @@ import { StyleguideAnalyzer } from '../styleguide/styleguide-analyzer';
  * Depending on the pattern parser used, various styleguide formats are supported,
  * e.g. Patternplate.
  */
-export interface Pattern {
-	readonly styleguide?: Styleguide;
-	readonly analyzer?: StyleguideAnalyzer;
-	readonly globalId: string;
+export abstract class Pattern {
+	public readonly styleguide: Styleguide;
+	public readonly analyzer?: StyleguideAnalyzer;
 	/**
 	 * The ID of the pattern (also the folder name within the parent folder).
 	 */
-	readonly id: string;
+	public abstract readonly id: PatternIdentifier;
 
 	/**
 	 * The absolute path to the icon of the pattern, if provided by the implementation.
 	 */
-	readonly iconPath?: string;
+	public abstract readonly iconPath?: string;
 
 	/**
 	 * The human-readable name of the pattern.
 	 * In the frontend, to be displayed instead of the ID.
 	 */
-	readonly name: string;
+	public abstract readonly name: string;
 
 	/**
 	 * The properties this pattern supports.
 	 */
-	readonly properties: Map<string, Property>;
+	public abstract readonly properties: Map<string, Property>;
 
 	/**
 	 * This is a valid pattern for Alva (has been parsed successfully).
 	 */
-	readonly valid: boolean;
+	public abstract readonly valid: boolean;
+
+	public constructor(styleguide: Styleguide, analyzer?: StyleguideAnalyzer) {
+		this.styleguide = styleguide;
+		this.analyzer = analyzer;
+	}
 
 	/**
 	 * Returns a property this pattern supports, by its ID.
 	 * @param id The ID of the property.
 	 * @return The property for the given ID, if it exists.
 	 */
-	getProperty(id: string): Property | undefined;
+	public abstract getProperty(id: string): Property | undefined;
 
 	/**
 	 * Returns a string representation of this pattern.
 	 * @return The string representation.
 	 */
-	toString(): string;
+	public abstract toString(): string;
 
 	/**
 	 * Loads (or reloads) this pattern from its implemetation.
@@ -60,5 +65,5 @@ export interface Pattern {
 	 * provided, parsing name, ID, properties, etc. of the pattern.
 	 * All parsers may contribute to the final pattern information.
 	 */
-	reload(): void;
+	public abstract reload(): void;
 }
