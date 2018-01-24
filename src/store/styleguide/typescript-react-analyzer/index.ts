@@ -1,7 +1,7 @@
 import { PatternBaseInfo, ReactPattern } from './react-pattern';
 import { Styleguide } from '../styleguide';
 import { StyleguideAnalyzer } from '../styleguide-analyzer';
-import { getExports } from './ts-utils';
+import { getExports } from './typescript/ts-utils';
 import * as ts from 'typescript';
 
 import * as FileUtils from 'fs';

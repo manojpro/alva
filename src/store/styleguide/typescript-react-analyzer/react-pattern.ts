@@ -4,7 +4,7 @@ import { PatternIdentifier } from '../../pattern/pattern-identifier';
 import { Property } from '../../pattern/property/property';
 import { getPropreties } from './property-analyzer';
 import { Styleguide } from '../styleguide';
-import { Export } from './ts-utils';
+import { Export } from './typescript/ts-utils';
 import { TypescriptReactAnalyzer } from '../typescript-react-analyzer';
 
 export interface PatternBaseInfo {
