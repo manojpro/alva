@@ -3,7 +3,7 @@ import { ReactPattern } from './react-pattern';
 import * as ts from 'typescript';
 
 import { BooleanProperty } from '../../pattern/property/boolean-property';
-// import { EnumProperty, Option } from '../../pattern/property/enum-property';
+import { EnumProperty, Option } from '../../pattern/property/enum-property';
 import { NumberArrayProperty } from '../../pattern/property/number-array-property';
 import { NumberProperty } from '../../pattern/property/number-property';
 import { ObjectProperty } from '../../pattern/property/object-property';
@@ -28,7 +28,7 @@ export function getProperties(pattern: ReactPattern): Map<string, Property> {
 		}
 
 		const signature = memberSymbol.valueDeclaration;
-		const property = createProperty(signature);
+		const property = createProperty(signature, pattern.exportInfo.exportType.typeChecker);
 
 		if (property) {
 			properties.set(property.getId(), property);
@@ -36,10 +36,12 @@ export function getProperties(pattern: ReactPattern): Map<string, Property> {
 	});
 
 	return properties;
-	// return new Map();
 }
 
-function createProperty(signature: ts.PropertySignature): Property | undefined {
+function createProperty(
+	signature: ts.PropertySignature,
+	typechecker: ts.TypeChecker
+): Property | undefined {
 	const typeNode: ts.TypeNode | undefined = signature.type;
 	if (!typeNode) {
 		return undefined;
@@ -66,11 +68,11 @@ function createProperty(signature: ts.PropertySignature): Property | undefined {
 				case ts.SyntaxKind.NumberKeyword:
 					return new NumberArrayProperty(id);
 			}
-		// break;
+			break;
 
-		// case ts.SyntaxKind.TypeReference:
-		// 	const referenceNode = typeNode as ts.TypeReferenceNode;
-		// 	property = processTypeProperty(id, referenceNode);
+		case ts.SyntaxKind.TypeReference:
+			const typeReference = typeNode as ts.TypeReferenceNode;
+			return processTypeProperty(id, typeReference, typechecker);
 	}
 
 	if (!property) {
@@ -81,53 +83,58 @@ function createProperty(signature: ts.PropertySignature): Property | undefined {
 	return property;
 }
 
-// function processTypeProperty(
-// 	id: string,
-// 	referenceNode: ts.TypeReferenceNode
-// ): Property | undefined {
-// 	if (!referenceNode.typeName) {
-// 		return undefined;
-// 	}
+function processTypeProperty(
+	id: string,
+	referenceNode: ts.TypeReferenceNode,
+	typechecker: ts.TypeChecker
+): Property | undefined {
+	if (!referenceNode.typeName) {
+		return undefined;
+	}
 
-// 	// TODO: Pattern type
+	const type = typechecker.getTypeFromTypeNode(referenceNode);
 
-// 	const enumTypeName: string = referenceNode.typeName.getText();
-// 	const enumDeclaration: ts.EnumDeclaration | undefined = this.enums[enumTypeName];
-// 	if (!enumDeclaration) {
-// 		return undefined;
-// 	}
+	if (!(type.symbol && type.symbol.valueDeclaration)) {
+		return undefined;
+	}
 
-// 	const options: Option[] = [];
-// 	enumDeclaration.members.forEach((enumMember, index) => {
-// 		const enumMemberId = enumMember.name.getText();
-// 		let enumMemberName = getJsDocValue(enumMember, 'name');
-// 		if (enumMemberName === undefined) {
-// 			enumMemberName = enumMemberId;
-// 		}
-// 		const enumMemberOrdinal: number = enumMember.initializer
-// 			? parseInt(enumMember.initializer.getText(), 10)
-// 			: index;
-// 		options.push(new Option(enumMemberId, enumMemberName, enumMemberOrdinal));
-// 	});
+	const declaration = type.symbol.valueDeclaration;
 
-// 	const result: EnumProperty = new EnumProperty(id);
-// 	result.setOptions(options);
-// 	return result;
-// }
+	if (!ts.isEnumDeclaration(declaration)) {
+		return undefined;
+	}
 
-// function getJsDocValue(node: ts.Node, tagName: string): string | undefined {
-// 	const jsDocTags: ReadonlyArray<ts.JSDocTag> | undefined = ts.getJSDocTags(node);
-// 	let result: string | undefined;
-// 	if (jsDocTags) {
-// 		jsDocTags.forEach(jsDocTag => {
-// 			if (jsDocTag.tagName && jsDocTag.tagName.text === tagName) {
-// 				if (result === undefined) {
-// 					result = '';
-// 				}
-// 				result += ` ${jsDocTag.comment}`;
-// 			}
-// 		});
-// 	}
+	const options: Option[] = [];
+	declaration.members.forEach((enumMember, index) => {
+		const enumMemberId = enumMember.name.getText();
+		let enumMemberName = getJsDocValue(enumMember, 'name');
+		if (enumMemberName === undefined) {
+			enumMemberName = enumMemberId;
+		}
+		const enumMemberOrdinal: number = enumMember.initializer
+			? parseInt(enumMember.initializer.getText(), 10)
+			: index;
+		options.push(new Option(enumMemberId, enumMemberName, enumMemberOrdinal));
+	});
 
-// 	return result === undefined ? undefined : result.trim();
-// }
+	const result: EnumProperty = new EnumProperty(id);
+	result.setOptions(options);
+	return result;
+}
+
+function getJsDocValue(node: ts.Node, tagName: string): string | undefined {
+	const jsDocTags: ReadonlyArray<ts.JSDocTag> | undefined = ts.getJSDocTags(node);
+	let result: string | undefined;
+	if (jsDocTags) {
+		jsDocTags.forEach(jsDocTag => {
+			if (jsDocTag.tagName && jsDocTag.tagName.text === tagName) {
+				if (result === undefined) {
+					result = '';
+				}
+				result += ` ${jsDocTag.comment}`;
+			}
+		});
+	}
+
+	return result === undefined ? undefined : result.trim();
+}
