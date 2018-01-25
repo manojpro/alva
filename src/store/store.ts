@@ -315,7 +315,7 @@ export class Store {
 			}
 			this.styleGuidePath = styleguidePath;
 			this.currentPage = undefined;
-			this.styleguide = new Styleguide('yoloshit', styleguidePath);
+			this.styleguide = new Styleguide('default', styleguidePath);
 			this.styleguide.load();
 
 			(this.projects as IObservableArray<Project>).clear();

@@ -31,6 +31,10 @@ export class ReactPattern extends Pattern {
 		return this._properties;
 	}
 
+	public get isConstructable(): boolean {
+		return this.exportInfo.exportType.isConstructable;
+	}
+
 	public constructor(
 		styleguide: Styleguide,
 		analyzer: TypescriptReactAnalyzer,

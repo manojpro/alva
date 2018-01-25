@@ -11,7 +11,7 @@ import { StringArrayProperty } from '../../pattern/property/string-array-propert
 import { StringProperty } from '../../pattern/property/string-property';
 
 export function getProperties(pattern: ReactPattern): Map<string, Property> {
-	const propType = pattern.exportInfo.exportType.typeArguments[0];
+	const propType = pattern.exportInfo.wellKnownReactAncestorType.typeArguments[0];
 
 	if (!propType) {
 		return new Map();

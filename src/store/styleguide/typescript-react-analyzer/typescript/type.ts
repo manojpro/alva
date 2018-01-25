@@ -42,6 +42,14 @@ export class Type {
 
 		return this.type.typeArguments.map(typeArg => new Type(typeArg, this.typeChecker));
 	}
+
+	public get isConstructable(): boolean {
+		if (!this.type.symbol) {
+			return false;
+		}
+
+		return (this.type.symbol.flags & ts.SymbolFlags.Class) === ts.SymbolFlags.Class;
+	}
 }
 
 function getOriginalType(type: ts.Type, typechecker: ts.TypeChecker): ts.Type | undefined {

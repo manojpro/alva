@@ -30,7 +30,7 @@ export interface PreviewProps {
 
 @observer
 export class Preview extends React.Component<PreviewProps> {
-	private patternFactories: { [folder: string]: React.StatelessComponent };
+	private patternFactories: { [id: string]: React.StatelessComponent | ObjectConstructor };
 
 	public constructor(props: PreviewProps) {
 		super(props);
@@ -86,15 +86,20 @@ export class Preview extends React.Component<PreviewProps> {
 			// Then, load the pattern factory
 			const reactPattern = pattern as ReactPattern;
 			const patternPath: string = reactPattern.fileInfo.jsFilePath;
-			let patternFactory: React.StatelessComponent = this.patternFactories[patternPath];
+			let patternFactory: React.StatelessComponent | ObjectConstructor = this.patternFactories[
+				reactPattern.id.globalId
+			];
 			if (patternFactory == null) {
 				// tslint:disable-line
 				const exportName = reactPattern.exportInfo.exportName || 'default';
 				const module = require(patternPath);
 				patternFactory = module[exportName];
-				this.patternFactories[patternPath] = patternFactory;
+				this.patternFactories[reactPattern.id.globalId] = patternFactory;
 			}
-			const reactComponent = patternFactory(componentProps);
+
+			const reactComponent = reactPattern.isConstructable
+				? React.createElement(patternFactory, componentProps)
+				: (patternFactory as React.StatelessComponent)(componentProps);
 
 			// Finally, build the component
 			return <PatternWrapper key={key}>{reactComponent}</PatternWrapper>;
