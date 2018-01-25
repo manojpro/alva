@@ -1,60 +1,84 @@
 import { Property } from '../../pattern/property/property';
 import { ReactPattern } from './react-pattern';
-// import * as ts from 'typescript';
+import * as ts from 'typescript';
 
-// import { BooleanProperty } from '../../pattern/property/boolean-property';
+import { BooleanProperty } from '../../pattern/property/boolean-property';
 // import { EnumProperty, Option } from '../../pattern/property/enum-property';
-// import { NumberArrayProperty } from '../../pattern/property/number-array-property';
-// import { NumberProperty } from '../../pattern/property/number-property';
-// import { ObjectProperty } from '../../pattern/property/object-property';
-// import { StringArrayProperty } from '../../pattern/property/string-array-property';
-// import { StringProperty } from '../../pattern/property/string-property';
+import { NumberArrayProperty } from '../../pattern/property/number-array-property';
+import { NumberProperty } from '../../pattern/property/number-property';
+import { ObjectProperty } from '../../pattern/property/object-property';
+import { StringArrayProperty } from '../../pattern/property/string-array-property';
+import { StringProperty } from '../../pattern/property/string-property';
 
 export function getPropreties(pattern: ReactPattern): Map<string, Property> {
-	return new Map();
+	const propType = pattern.exportInfo.exportType.typeArguments[0];
+
+	if (!propType) {
+		return new Map();
+	}
+
+	const properties = new Map<string, Property>();
+	const members = propType.type.getApparentProperties();
+
+	members.forEach(memberSymbol => {
+		if (
+			!(memberSymbol.valueDeclaration && ts.isPropertySignature(memberSymbol.valueDeclaration))
+		) {
+			return;
+		}
+
+		const signature = memberSymbol.valueDeclaration;
+		const property = createProperty(signature);
+
+		if (property) {
+			properties.set(property.getId(), property);
+		}
+	});
+
+	return properties;
 }
 
-// function createProperty(signature: ts.PropertySignature): Property | undefined {
-// 	const typeNode: ts.TypeNode | undefined = signature.type;
-// 	if (!typeNode) {
-// 		return undefined;
-// 	}
+function createProperty(signature: ts.PropertySignature): Property | undefined {
+	const typeNode: ts.TypeNode | undefined = signature.type;
+	if (!typeNode) {
+		return undefined;
+	}
 
-// 	const id: string = signature.name.getText();
+	const id: string = signature.name.getText();
 
-// 	let property: Property | undefined;
-// 	switch (typeNode.kind) {
-// 		case ts.SyntaxKind.StringKeyword:
-// 			return new StringProperty(id);
+	let property: Property | undefined;
+	switch (typeNode.kind) {
+		case ts.SyntaxKind.StringKeyword:
+			return new StringProperty(id);
 
-// 		case ts.SyntaxKind.NumberKeyword:
-// 			return new NumberProperty(id);
+		case ts.SyntaxKind.NumberKeyword:
+			return new NumberProperty(id);
 
-// 		case ts.SyntaxKind.BooleanKeyword:
-// 			return new BooleanProperty(id);
+		case ts.SyntaxKind.BooleanKeyword:
+			return new BooleanProperty(id);
 
-// 		case ts.SyntaxKind.ArrayType:
-// 			switch ((typeNode as ts.ArrayTypeNode).elementType.kind) {
-// 				case ts.SyntaxKind.StringKeyword:
-// 					return new StringArrayProperty(id);
+		case ts.SyntaxKind.ArrayType:
+			switch ((typeNode as ts.ArrayTypeNode).elementType.kind) {
+				case ts.SyntaxKind.StringKeyword:
+					return new StringArrayProperty(id);
 
-// 				case ts.SyntaxKind.NumberKeyword:
-// 					return new NumberArrayProperty(id);
-// 			}
-// 			break;
+				case ts.SyntaxKind.NumberKeyword:
+					return new NumberArrayProperty(id);
+			}
+		// break;
 
-// 		case ts.SyntaxKind.TypeReference:
-// 			const referenceNode = typeNode as ts.TypeReferenceNode;
-// 			property = processTypeProperty(id, referenceNode);
-// 	}
+		// case ts.SyntaxKind.TypeReference:
+		// 	const referenceNode = typeNode as ts.TypeReferenceNode;
+		// 	property = processTypeProperty(id, referenceNode);
+	}
 
-// 	if (!property) {
-// 		property = new ObjectProperty(id);
-// 		// TODO: Parse properties
-// 	}
+	if (!property) {
+		property = new ObjectProperty(id);
+		// TODO: Parse properties
+	}
 
-// 	return property;
-// }
+	return property;
+}
 
 // function processTypeProperty(
 // 	id: string,

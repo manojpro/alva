@@ -90,12 +90,13 @@ export class Preview extends React.Component<PreviewProps> {
 
 			// Then, load the pattern factory
 			const reactPattern = pattern as ReactPattern;
-			const patternPath: string = reactPattern.init.baseInfo.jsFilePath;
+			const patternPath: string = reactPattern.fileInfo.jsFilePath;
 			let patternFactory: React.StatelessComponent = this.patternFactories[patternPath];
 			if (patternFactory == null) {
 				// tslint:disable-line
-				const exportName = reactPattern.init.export.exportName || 'default';
-				patternFactory = require(patternPath)[exportName];
+				const exportName = reactPattern.exportInfo.exportName || 'default';
+				const module = require(patternPath);
+				patternFactory = module[exportName];
 				this.patternFactories[patternPath] = patternFactory;
 			}
 			const reactComponent = patternFactory(componentProps);

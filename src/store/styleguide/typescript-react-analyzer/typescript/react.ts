@@ -1,14 +1,54 @@
+import { Export, getExports } from './ts-utils';
 import { Type } from './type';
 import * as ts from 'typescript';
 
-const WellKnownReactComponentTypes = ['Component', 'StatelessComponent', 'ComponentClass'];
+const WellKnownReactComponentTypes = [
+	'Component',
+	'PureComponent',
+	'StatelessComponent',
+	'ComponentClass'
+];
 
-export function inheritsWellKnownReactType(program: ts.Program, type: Type): boolean {
+export interface ReactComponentExport extends Export {
+	wellKnownReactAncestorType: Type;
+}
+
+export function getReactComponentExports(
+	sourceFile: ts.SourceFile,
+	program: ts.Program
+): ReactComponentExport[] {
+	const reactExports: ReactComponentExport[] = [];
+
+	const exports = getExports(sourceFile, program);
+
+	exports.forEach(exportInfo => {
+		const reactType = findWellKnownReactType(program, exportInfo.exportType);
+
+		if (reactType) {
+			reactExports.push({
+				...exportInfo,
+				wellKnownReactAncestorType: reactType
+			});
+		}
+	});
+
+	return reactExports;
+}
+
+export function findWellKnownReactType(program: ts.Program, type: Type): Type | undefined {
 	if (isReactType(program, type.type)) {
-		return true;
+		return type;
 	}
 
-	return type.baseTypes.some(baseType => inheritsWellKnownReactType(program, baseType));
+	for (const baseType of type.baseTypes) {
+		const wellKnownReactType = findWellKnownReactType(program, baseType);
+
+		if (wellKnownReactType) {
+			return wellKnownReactType;
+		}
+	}
+
+	return undefined;
 }
 
 export function isReactType(program: ts.Program, type: ts.Type): boolean {

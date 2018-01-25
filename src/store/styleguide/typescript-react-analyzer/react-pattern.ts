@@ -3,47 +3,55 @@ import { Pattern } from '../../pattern/pattern';
 import { PatternIdentifier } from '../../pattern/pattern-identifier';
 import { Property } from '../../pattern/property/property';
 import { getPropreties } from './property-analyzer';
+import { ReactComponentExport } from './typescript/react';
 import { Styleguide } from '../styleguide';
-import { Export } from './typescript/ts-utils';
 import { TypescriptReactAnalyzer } from '../typescript-react-analyzer';
 
-export interface PatternBaseInfo {
+export interface PatternFileInfo {
 	directory: string;
 	jsFilePath: string;
 	declarationFilePath: string;
 }
 
 export interface PatternInit {
-	baseInfo: PatternBaseInfo;
-	export: Export;
+	baseInfo: PatternFileInfo;
+	export: ReactComponentExport;
 }
 
 export class ReactPattern extends Pattern {
 	public readonly iconPath?: string | undefined;
-	public readonly properties: Map<string, Property>;
+	private readonly _properties: Map<string, Property>;
 	public readonly valid: boolean;
 	public readonly name: string;
 	public readonly id: PatternIdentifier;
-	public readonly init: PatternInit;
+	public readonly fileInfo: PatternFileInfo;
+	public readonly exportInfo: ReactComponentExport;
+
+	public get properties(): Map<string, Property> {
+		return this._properties;
+	}
 
 	public constructor(
 		styleguide: Styleguide,
 		analyzer: TypescriptReactAnalyzer,
-		init: PatternInit
+		fileInfo: PatternFileInfo,
+		exportInfo: ReactComponentExport
 	) {
 		super(styleguide, analyzer);
-		this.init = init;
+
+		this.fileInfo = fileInfo;
+		this.exportInfo = exportInfo;
+
 		this.id = this.createIdentifier();
 		this.name = this.getName();
-
-		this.properties = getPropreties(this);
+		this._properties = getPropreties(this);
 	}
 
 	public getProperty(id: string): Property | undefined {
 		return this.properties.get(id);
 	}
 	public toString(): string {
-		throw new Error('Method not implemented.');
+		return '';
 	}
 	public reload(): void {
 		throw new Error('Method not implemented.');
@@ -52,14 +60,14 @@ export class ReactPattern extends Pattern {
 	private createIdentifier(): PatternIdentifier {
 		const analyzer: TypescriptReactAnalyzer = this.analyzer as TypescriptReactAnalyzer;
 
-		const baseName = PathUtils.basename(this.init.baseInfo.jsFilePath, '.js');
+		const baseName = PathUtils.basename(this.fileInfo.jsFilePath, '.js');
 		const relativeDirectoryPath = PathUtils.relative(
 			this.styleguide.path,
-			this.init.baseInfo.directory
+			this.fileInfo.directory
 		);
 
 		const baseIdentifier = PathUtils.join(relativeDirectoryPath, baseName);
-		const exportIdentifier = this.init.export.exportName ? `@${this.init.export.exportName}` : '';
+		const exportIdentifier = this.exportInfo.exportName ? `@${this.exportInfo.exportName}` : '';
 
 		const id = `${baseIdentifier}${exportIdentifier}`;
 
@@ -71,10 +79,10 @@ export class ReactPattern extends Pattern {
 	}
 
 	private getName(): string {
-		const baseName = PathUtils.basename(this.init.baseInfo.jsFilePath, '.js');
-		const directoryName = PathUtils.basename(this.init.baseInfo.directory);
-		const name = this.init.export.exportName
-			? this.init.export.exportName
+		const baseName = PathUtils.basename(this.fileInfo.jsFilePath, '.js');
+		const directoryName = PathUtils.basename(this.fileInfo.directory);
+		const name = this.exportInfo.exportName
+			? this.exportInfo.exportName
 			: baseName !== 'index' ? baseName : directoryName;
 
 		return name;

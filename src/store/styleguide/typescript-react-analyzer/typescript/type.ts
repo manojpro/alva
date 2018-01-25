@@ -1,7 +1,11 @@
 import * as ts from 'typescript';
 
+export interface InternalType extends ts.Type {
+	typeArguments: InternalType[] | undefined;
+}
+
 export class Type {
-	public readonly type: ts.Type;
+	public readonly type: InternalType;
 	public readonly typeChecker: ts.TypeChecker;
 
 	public get name(): string | undefined {
@@ -9,7 +13,7 @@ export class Type {
 	}
 
 	public constructor(type: ts.Type, typechecker: ts.TypeChecker) {
-		this.type = type;
+		this.type = type as InternalType;
 		this.typeChecker = typechecker;
 	}
 

@@ -1,4 +1,3 @@
-import { inheritsWellKnownReactType } from './react';
 import { Type } from './type';
 import * as ts from 'typescript';
 
@@ -11,10 +10,6 @@ export function getExports(sourceFile: ts.SourceFile, program: ts.Program): Expo
 		const exportInfo = getExportInfo(program, statement);
 
 		if (!exportInfo) {
-			return;
-		}
-
-		if (!inheritsWellKnownReactType(program, exportInfo.exportType)) {
 			return;
 		}
 
