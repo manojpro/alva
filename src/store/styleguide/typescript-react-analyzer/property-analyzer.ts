@@ -10,7 +10,7 @@ import { ObjectProperty } from '../../pattern/property/object-property';
 import { StringArrayProperty } from '../../pattern/property/string-array-property';
 import { StringProperty } from '../../pattern/property/string-property';
 
-export function getPropreties(pattern: ReactPattern): Map<string, Property> {
+export function getProperties(pattern: ReactPattern): Map<string, Property> {
 	const propType = pattern.exportInfo.exportType.typeArguments[0];
 
 	if (!propType) {
@@ -36,6 +36,7 @@ export function getPropreties(pattern: ReactPattern): Map<string, Property> {
 	});
 
 	return properties;
+	// return new Map();
 }
 
 function createProperty(signature: ts.PropertySignature): Property | undefined {

@@ -1,11 +1,9 @@
 import { observer } from 'mobx-react';
 import { Page } from '../../store/page/page';
 import { PageElement } from '../../store/page/page-element';
-import { Pattern } from '../../store/pattern/pattern';
 import { PropertyValue } from '../../store/page/property-value';
 import * as React from 'react';
 import { ReactPattern } from '../../store/styleguide/typescript-react-analyzer/react-pattern';
-import { TextPattern } from '../../store/pattern/text-pattern';
 
 class PatternWrapper extends React.Component<{}, PatternWrapperState> {
 	public constructor(props: {}) {
@@ -70,10 +68,7 @@ export class Preview extends React.Component<PreviewProps> {
 				return null;
 			}
 
-			const pattern: Pattern = pageElement.getPattern() as Pattern;
-			if (pattern instanceof TextPattern) {
-				return pageElement.getPropertyValue('text');
-			}
+			const pattern: ReactPattern = pageElement.getPattern() as ReactPattern;
 
 			// tslint:disable-next-line:no-any
 			const componentProps: any = {};

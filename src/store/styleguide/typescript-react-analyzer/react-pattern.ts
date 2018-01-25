@@ -2,7 +2,7 @@ import * as PathUtils from 'path';
 import { Pattern } from '../../pattern/pattern';
 import { PatternIdentifier } from '../../pattern/pattern-identifier';
 import { Property } from '../../pattern/property/property';
-import { getPropreties } from './property-analyzer';
+import { getProperties } from './property-analyzer';
 import { ReactComponentExport } from './typescript/react';
 import { Styleguide } from '../styleguide';
 import { TypescriptReactAnalyzer } from '../typescript-react-analyzer';
@@ -44,7 +44,7 @@ export class ReactPattern extends Pattern {
 
 		this.id = this.createIdentifier();
 		this.name = this.getName();
-		this._properties = getPropreties(this);
+		this._properties = getProperties(this);
 	}
 
 	public getProperty(id: string): Property | undefined {
