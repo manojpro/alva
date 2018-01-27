@@ -6,7 +6,7 @@ import { BooleanProperty } from '../../pattern/property/boolean-property';
 import { EnumProperty, Option } from '../../pattern/property/enum-property';
 import { NumberArrayProperty } from '../../pattern/property/number-array-property';
 import { NumberProperty } from '../../pattern/property/number-property';
-import { ObjectProperty } from '../../pattern/property/object-property';
+// import { ObjectProperty } from '../../pattern/property/object-property';
 import { StringArrayProperty } from '../../pattern/property/string-array-property';
 import { StringProperty } from '../../pattern/property/string-property';
 
@@ -19,16 +19,14 @@ export function getProperties(pattern: ReactPattern): Map<string, Property> {
 
 	const properties = new Map<string, Property>();
 	const members = propType.type.getApparentProperties();
+	const typechecker = propType.typeChecker;
 
 	members.forEach(memberSymbol => {
-		if (
-			!(memberSymbol.valueDeclaration && ts.isPropertySignature(memberSymbol.valueDeclaration))
-		) {
+		if ((memberSymbol.flags & ts.SymbolFlags.Property) !== ts.SymbolFlags.Property) {
 			return;
 		}
 
-		const signature = memberSymbol.valueDeclaration;
-		const property = createProperty(signature, pattern.exportInfo.exportType.typeChecker);
+		const property = createProperty(memberSymbol.name, memberSymbol, typechecker);
 
 		if (property) {
 			properties.set(property.getId(), property);
@@ -39,73 +37,108 @@ export function getProperties(pattern: ReactPattern): Map<string, Property> {
 }
 
 function createProperty(
-	signature: ts.PropertySignature,
+	name: string,
+	symbol: ts.Symbol,
 	typechecker: ts.TypeChecker
 ): Property | undefined {
-	const typeNode: ts.TypeNode | undefined = signature.type;
-	if (!typeNode) {
-		return undefined;
+	const declaration = findTypeDeclaration(symbol) as ts.PropertyDeclaration;
+
+	if (!declaration) {
+		return;
 	}
 
-	const id: string = signature.name.getText();
-
-	let property: Property | undefined;
-	switch (typeNode.kind) {
-		case ts.SyntaxKind.StringKeyword:
-			return new StringProperty(id);
-
-		case ts.SyntaxKind.NumberKeyword:
-			return new NumberProperty(id);
-
-		case ts.SyntaxKind.BooleanKeyword:
-			return new BooleanProperty(id);
-
-		case ts.SyntaxKind.ArrayType:
-			switch ((typeNode as ts.ArrayTypeNode).elementType.kind) {
-				case ts.SyntaxKind.StringKeyword:
-					return new StringArrayProperty(id);
-
-				case ts.SyntaxKind.NumberKeyword:
-					return new NumberArrayProperty(id);
-			}
-			break;
-
-		case ts.SyntaxKind.TypeReference:
-			const typeReference = typeNode as ts.TypeReferenceNode;
-			return processTypeProperty(id, typeReference, typechecker);
+	if (!declaration.type) {
+		return;
 	}
 
-	if (!property) {
-		property = new ObjectProperty(id);
-		// TODO: Parse properties
+	let typeNode = declaration.type;
+
+	if (ts.isUnionTypeNode(declaration.type)) {
+		typeNode = declaration.type.types[0];
 	}
 
-	return property;
+	const type = typechecker.getTypeFromTypeNode(typeNode);
+
+	const optional = (symbol.flags & ts.SymbolFlags.Optional) === ts.SymbolFlags.Optional;
+
+	if ((type.flags & ts.TypeFlags.String) === ts.TypeFlags.String) {
+		const property = new StringProperty(name);
+		property.setRequired(!optional);
+		return property;
+	}
+
+	if ((type.flags & ts.TypeFlags.Number) === ts.TypeFlags.Number) {
+		const property = new NumberProperty(name);
+		property.setRequired(!optional);
+		return property;
+	}
+
+	if ((type.flags & ts.TypeFlags.Boolean) === ts.TypeFlags.Boolean) {
+		const property = new BooleanProperty(name);
+		property.setRequired(!optional);
+		return property;
+	}
+
+	if (ts.isTypeReferenceNode(typeNode)) {
+		if (!type.symbol) {
+			return;
+		}
+
+		const typeReferenceDeclaration = findTypeDeclaration(type.symbol);
+
+		if (!typeReferenceDeclaration) {
+			return;
+		}
+
+		if (ts.isEnumDeclaration(typeReferenceDeclaration)) {
+			const property = new EnumProperty(name);
+			property.setOptions(getEnumTypeOptions(typeReferenceDeclaration));
+			property.setRequired(!optional);
+			return property;
+		}
+	}
+
+	if (ts.isArrayTypeNode(typeNode)) {
+		const arrayTypeNode = typeNode;
+
+		switch (arrayTypeNode.elementType.kind) {
+			case ts.SyntaxKind.StringKeyword:
+				return new StringArrayProperty(name);
+
+			case ts.SyntaxKind.NumberKeyword:
+				return new NumberArrayProperty(name);
+		}
+	}
+
+	return undefined;
 }
 
-function processTypeProperty(
-	id: string,
-	referenceNode: ts.TypeReferenceNode,
-	typechecker: ts.TypeChecker
-): Property | undefined {
-	if (!referenceNode.typeName) {
-		return undefined;
+function findTypeDeclaration(symbol: ts.Symbol): ts.Declaration | undefined {
+	if (symbol.valueDeclaration) {
+		return symbol.valueDeclaration;
 	}
 
-	const type = typechecker.getTypeFromTypeNode(referenceNode);
-
-	if (!(type.symbol && type.symbol.valueDeclaration)) {
-		return undefined;
+	if (symbol.declarations) {
+		return symbol.declarations[0];
 	}
 
-	const declaration = type.symbol.valueDeclaration;
+	// const internalSymbol = symbol as {
+	// 	type?: ts.Type;
+	// };
 
-	if (!ts.isEnumDeclaration(declaration)) {
-		return undefined;
-	}
+	// if (!(internalSymbol.type && internalSymbol.type.symbol)) {
+	// 	return;
+	// }
 
-	const options: Option[] = [];
-	declaration.members.forEach((enumMember, index) => {
+	// if (internalSymbol.type.symbol) {
+	// 	return findTypeDeclaration(internalSymbol.type.symbol);
+	// }
+
+	return;
+}
+
+function getEnumTypeOptions(declaration: ts.EnumDeclaration): Option[] {
+	return declaration.members.map((enumMember, index) => {
 		const enumMemberId = enumMember.name.getText();
 		let enumMemberName = getJsDocValue(enumMember, 'name');
 		if (enumMemberName === undefined) {
@@ -114,12 +147,9 @@ function processTypeProperty(
 		const enumMemberOrdinal: number = enumMember.initializer
 			? parseInt(enumMember.initializer.getText(), 10)
 			: index;
-		options.push(new Option(enumMemberId, enumMemberName, enumMemberOrdinal));
-	});
 
-	const result: EnumProperty = new EnumProperty(id);
-	result.setOptions(options);
-	return result;
+		return new Option(enumMemberId, enumMemberName, enumMemberOrdinal);
+	});
 }
 
 function getJsDocValue(node: ts.Node, tagName: string): string | undefined {

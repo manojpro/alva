@@ -97,9 +97,7 @@ export class Preview extends React.Component<PreviewProps> {
 				this.patternFactories[reactPattern.id.globalId] = patternFactory;
 			}
 
-			const reactComponent = reactPattern.isConstructable
-				? React.createElement(patternFactory, componentProps)
-				: (patternFactory as React.StatelessComponent)(componentProps);
+			const reactComponent = React.createElement(patternFactory, componentProps);
 
 			// Finally, build the component
 			return <PatternWrapper key={key}>{reactComponent}</PatternWrapper>;

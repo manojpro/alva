@@ -22,15 +22,20 @@ export function getExports(sourceFile: ts.SourceFile, program: ts.Program): Expo
 export function getExportInfo(program: ts.Program, statement: ts.Statement): Export | undefined {
 	const typechecker = program.getTypeChecker();
 
+	const modifiers = statement.modifiers;
+	const isDefault =
+		modifiers && modifiers.some(modifier => modifier.kind === ts.SyntaxKind.DefaultKeyword);
+
 	if (ts.isVariableStatement(statement)) {
 		for (const declaration of statement.declarationList.declarations) {
 			if (!declaration.type) {
 				continue;
 			}
 
-			const exportName = declaration.name.getText();
+			const exportName = isDefault ? undefined : declaration.name.getText();
+
 			const type = typechecker.getTypeAtLocation(declaration);
-			const exportType = new Type(type, typechecker);
+			const exportType = new Type(type, typechecker, declaration);
 
 			return {
 				exportName,
@@ -44,9 +49,10 @@ export function getExportInfo(program: ts.Program, statement: ts.Statement): Exp
 			return;
 		}
 
-		const exportName = statement.name.text;
+		const exportName = isDefault ? undefined : statement.name.text;
+
 		const type = typechecker.getTypeAtLocation(statement);
-		const exportType = new Type(type, typechecker);
+		const exportType = new Type(type, typechecker, statement);
 
 		return {
 			exportName,
@@ -60,7 +66,7 @@ export function getExportInfo(program: ts.Program, statement: ts.Statement): Exp
 
 		if (declaration) {
 			const type = typechecker.getTypeAtLocation(declaration);
-			const exportType = new Type(type, typechecker);
+			const exportType = new Type(type, typechecker, declaration);
 
 			return {
 				exportType

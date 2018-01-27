@@ -1,19 +1,20 @@
 import * as ts from 'typescript';
 
-export interface InternalType extends ts.Type {
-	typeArguments: InternalType[] | undefined;
-}
+// export interface InternalType extends ts.Type {
+// 	typeArguments: InternalType[] | undefined;
+// }
 
 export class Type {
-	public readonly type: InternalType;
+	public readonly type: ts.Type;
 	public readonly typeChecker: ts.TypeChecker;
+	public readonly origin: ts.Node;
 
 	public get name(): string | undefined {
 		return this.type.symbol && this.type.symbol.name;
 	}
 
-	public constructor(type: ts.Type, typechecker: ts.TypeChecker) {
-		this.type = type as InternalType;
+	public constructor(type: ts.Type, typechecker: ts.TypeChecker, origin: ts.Node) {
+		this.type = type;
 		this.typeChecker = typechecker;
 	}
 
@@ -32,15 +33,23 @@ export class Type {
 			return [];
 		}
 
-		return baseTypes.map(baseType => new Type(baseType, this.typeChecker));
+		return baseTypes.map(baseType => new Type(baseType, this.typeChecker, this.origin));
 	}
 
 	public get typeArguments(): Type[] {
-		if (!this.type.typeArguments) {
+		if (!(this.type.flags & ts.TypeFlags.Object)) {
 			return [];
 		}
 
-		return this.type.typeArguments.map(typeArg => new Type(typeArg, this.typeChecker));
+		const typeReferenceType = this.type as ts.TypeReference;
+
+		if (!typeReferenceType.typeArguments) {
+			return [];
+		}
+
+		return typeReferenceType.typeArguments.map(
+			typeArg => new Type(typeArg, this.typeChecker, this.origin)
+		);
 	}
 
 	public get isConstructable(): boolean {
