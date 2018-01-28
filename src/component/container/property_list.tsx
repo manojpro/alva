@@ -3,6 +3,7 @@ import { BooleanItem } from '../../lsg/patterns/property-items/boolean-item/inde
 import { StringItem } from '../../lsg/patterns/property-items/string-item/index';
 import { EnumItem, Values } from '../../lsg/patterns/property-items/enum-item/index';
 import { observer } from 'mobx-react';
+import { ObjectProperty } from '../../store/pattern/property/object-property';
 import { Property } from '../../store/pattern/property/property';
 import * as React from 'react';
 import { Store } from '../../store/store';
@@ -88,6 +89,16 @@ export class PropertyList extends React.Component<PropertyListProps> {
 										selectedElement.setPropertyValue(id, event.currentTarget.value);
 									}}
 								/>
+							);
+
+						case 'object':
+							const members = (property as ObjectProperty).getProperties();
+
+							return (
+								<details>
+									<summary>{name}</summary>
+									<div>{members.map(member => <div>{member.getName()}</div>)}</div>
+								</details>
 							);
 
 						default:

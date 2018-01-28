@@ -48,7 +48,7 @@ export class ReactPattern extends Pattern {
 
 		this.id = this.createIdentifier();
 		this.name = this.getName();
-		this._properties = getProperties(this);
+		this._properties = this.generateProperties();
 	}
 
 	public getProperty(id: string): Property | undefined {
@@ -90,5 +90,15 @@ export class ReactPattern extends Pattern {
 			: baseName !== 'index' ? baseName : directoryName;
 
 		return name;
+	}
+
+	private generateProperties(): Map<string, Property> {
+		const propType = this.exportInfo.wellKnownReactAncestorType.typeArguments[0];
+
+		if (!propType) {
+			return new Map();
+		}
+
+		return getProperties(propType.type, propType.typeChecker);
 	}
 }

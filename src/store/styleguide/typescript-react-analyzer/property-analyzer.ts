@@ -1,25 +1,17 @@
 import { Property } from '../../pattern/property/property';
-import { ReactPattern } from './react-pattern';
 import * as ts from 'typescript';
 
 import { BooleanProperty } from '../../pattern/property/boolean-property';
 import { EnumProperty, Option } from '../../pattern/property/enum-property';
 import { NumberArrayProperty } from '../../pattern/property/number-array-property';
 import { NumberProperty } from '../../pattern/property/number-property';
-// import { ObjectProperty } from '../../pattern/property/object-property';
+import { ObjectProperty } from '../../pattern/property/object-property';
 import { StringArrayProperty } from '../../pattern/property/string-array-property';
 import { StringProperty } from '../../pattern/property/string-property';
 
-export function getProperties(pattern: ReactPattern): Map<string, Property> {
-	const propType = pattern.exportInfo.wellKnownReactAncestorType.typeArguments[0];
-
-	if (!propType) {
-		return new Map();
-	}
-
+export function getProperties(type: ts.Type, typechecker: ts.TypeChecker): Map<string, Property> {
 	const properties = new Map<string, Property>();
-	const members = propType.type.getApparentProperties();
-	const typechecker = propType.typeChecker;
+	const members = type.getApparentProperties();
 
 	members.forEach(memberSymbol => {
 		if ((memberSymbol.flags & ts.SymbolFlags.Property) !== ts.SymbolFlags.Property) {
@@ -94,6 +86,12 @@ function createProperty(
 			const property = new EnumProperty(name);
 			property.setOptions(getEnumTypeOptions(typeReferenceDeclaration));
 			property.setRequired(!optional);
+			return property;
+		}
+
+		if (ts.isInterfaceDeclaration(typeReferenceDeclaration)) {
+			const property = new ObjectProperty(name);
+			property.setProperties(getProperties(type, typechecker));
 			return property;
 		}
 	}
